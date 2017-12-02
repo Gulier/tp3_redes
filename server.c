@@ -15,10 +15,13 @@
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
+#include <math.h>
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include "tp_socket.h"
+
+#define TAM_JANELA 5
 
 void error(const char *msg)
 {//Exibe erro e aborta o programa
@@ -28,12 +31,12 @@ void error(const char *msg)
 
 int main(int argc, char *argv[])
 {
-     int sockfd, porta, b_size, n, aux;	//sockfd - file descriptor - guarda informações do socket
+     int sockfd, porta, b_size, n, aux,i;	//sockfd - file descriptor - guarda informações do socket
      socklen_t clilen;
      FILE * rFile;
      so_addr sv_addr, cli_addr;
      char fname[9999];
-     
+     char janela[TAM_JANELA];
      
      b_size = atoi(argv[2]);
      char *buffer; 
@@ -55,8 +58,10 @@ int main(int argc, char *argv[])
 
      strcpy(fname, buffer);
      rFile = fopen(fname,"r");					//Abre o arquivo em modo leitura
-	     
-     if (rFile!=NULL)
+     fseek(rFile, 0, SEEK_END);
+     int size = ftell(rFile);
+     int frames = ceil(size/b_size);
+     /*if (rFile!=NULL)
      {
      		int ack = 0;
 	    	aux = 1;
@@ -83,6 +88,26 @@ int main(int argc, char *argv[])
 		      }
 		      if (n < 0) 
       			 error("ERROR in sendto");
+	     	}     	
+     }*/
+     if (rFile!=NULL)
+     {
+     		int last_ack = 0;
+	    	while(n!=0)
+	    	{
+			for(i=1; i<=frames; i++)					//de 1 até o total de frames necessários
+			{
+				if(i%TAM_JANELA==0)			
+				{							//se deu o tamanho da janela, envia e espera o ack
+					tp_sendto(sockfd,buffer,b_size, &cli_addr);
+					bzero(buffer,b_size);
+					tp_recvfrom(sockfd, buffer, b_size, &cli_addr);
+				}
+				else
+				{
+					tp_sendto(sockfd,buffer,b_size, &cli_addr);	//caso contrario só envia
+				}
+		      	}
 	     	}     	
      }
      //Finaliza as conexões e fecha os arquivos
