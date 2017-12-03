@@ -93,65 +93,103 @@ int main(int argc, char *argv[])
      int frames = ceil(size/b_size);
      if (rFile!=NULL)
      {
-     		int ack = 0, j= 1;
+     		int ack = 0, j = 1, i, copiou = 0, m;
 	    	aux = 1;
-	    	while(aux==1)
-	    	{
-		      	bzero(buffer,b_size);			//zera buffer
-          		char oi[b_size-10];
-          		char *oi2 = geraId(j);
+/*while arquivo inteiro
+	for 
+		if copiou = 0
+			le os primeiros 5 buffers	
+			envia os 5 buffers
+		else
+			envia os 5 bfrbkp		
+		
+		
+	if recebeu
+		coloca no bfrbkp "FYN"
+	for
+		le as posições acima no bfrbkp
+	if(terminou=1)
+		soma no ack o valor do tam janela
+		copiou = 0
+		
+	else
+		copiou = 1 */
+	  struct timeval tv;
+	  tv.tv_sec = 5;  /* 5 Secs Timeout */
+      	  tv.tv_usec = 0;  // Not init'ing this can cause strange errors
+          setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv,sizeof(struct timeval));
+	  char bufferBkp[9999][b_size];
+	  while(aux)
+	  {
+			char oi[b_size-10];
 		      	//fprintf(stderr, "%s", oi2);
           		char result[b_size];
-          		bzero(result,b_size);
-		      	//fprintf(stderr, "\n%s\n", result);
-		      	n = fread(oi, b_size-10, 1, rFile);	//le bloco no arquivo do tamanho do buffer
-		      	strcpy(result, oi2);
-         		strcat(result, oi);
-		      	//fprintf(stderr, "\n%s\n", result);
-		      	fseek(rFile, n-1, SEEK_CUR);
-
-		      	if(n==0)
-		      	{						//Se chegou no fim do arquivo, envia avisando para o cliente
-		      		//tp_sendto(sockfd,result,b_size, &cli_addr);
-		      		tp_sendto(sockfd,"FYN",strlen("FYN"), &cli_addr);
-				aux=0;
-				break;
-		      	}
-
-		      	n = tp_sendto(sockfd,result,b_size, &cli_addr); //Caso contrário manda um bloco
-
-		      	while(1){					//Espera algum sinal do cliente antes de enviar o próximo pacote
-		      		bzero(buffer,b_size);
-		      		if(tp_recvfrom(sockfd, buffer, b_size, &cli_addr)>0){
-		      			fprintf(stderr, "%s", buffer);
-              				break;				//Quando recebe, quebra o loop e volta ao procedimento
-		      		}
-		      	}
-		      	if (n < 0)
-      			 	error("ERROR in sendto");
-	     		j++;
-        	}
-     }/*
-     if (rFile!=NULL)
-     {
-     		int last_ack = 0;
-	    	while(n!=0)
-	    	{
-			for(i=1; i<=frames; i++)					//de 1 até o total de frames necessários
-			{
-				if(i%TAM_JANELA==0)
-				{							//se deu o tamanho da janela, envia e espera o ack
-					tp_sendto(sockfd,buffer,b_size, &cli_addr);
-					bzero(buffer,b_size);
-					tp_recvfrom(sockfd, buffer, b_size, &cli_addr);
-				}
-				else
+				int sair=1;
+				for(i=ack; i<ack+TAM_JANELA; i++)
 				{
-					tp_sendto(sockfd,buffer,b_size, &cli_addr);	//caso contrario só envia
-				}
+					 //fprintf(stderr, "i : %d\n", i);
+				     if(copiou==0)
+				     {
+				         char *oi2 = geraId(i);
+					     //fprintf(stderr, "%s", oi2);
+					     bzero(result,b_size);
+					     //fprintf(stderr, "\n%s\n", result);
+					     n = fread(oi, b_size-10, 1, rFile); //le bloco no arquivo do tamanho do buffer
+					     fseek(rFile, n-1, SEEK_CUR);
+					     strcpy(result, oi2);
+					     strcat(result, oi);
+					     strcpy(bufferBkp[i], result);
+					     
+					     m = tp_sendto(sockfd,result,b_size, &cli_addr); //Caso contrário manda um bloco
+					     fprintf(stderr, "\n%s", result);
+					     
+					     if(n==0)
+					     {		//Se chegou no fim do arquivo, envia avisando para o cliente
+					      		//tp_sendto(sockfd,result,b_size, &cli_addr);
+					      		tp_sendto(sockfd,"FYN",strlen("FYN"), &cli_addr);
+							aux=0;
+							break;
+					     }
+				     }
+				     else
+				     {
+				     	 for(i=ack; i<ack+TAM_JANELA; i++)
+				     	{
+				     		if(!strcmp(bufferBkp[i],"FYN")==0)
+				     		{
+					     		m = tp_sendto(sockfd,bufferBkp[i],b_size, &cli_addr); //Caso contrário manda um bloco
+					     		fprintf(stderr, "\n%s", result);
+				     		}
+				     	}
+				     }
+           		}
+		      	bzero(buffer,b_size);
+		      	if(tp_recvfrom(sockfd, buffer, b_size, &cli_addr)>0){
+		      		strcpy(bufferBkp[atoi(buffer)],"FYN");
+		      		//fprintf(stderr, "txt: %s buf: %d\n",bufferBkp[atoi(buffer)], atoi(buffer));
 		      	}
-	     	}
-     }*/
+		      	sair = 1;
+		      	for(i=ack; i<ack+TAM_JANELA; i++)
+		      	{
+		      		if(!strcmp(bufferBkp[i],"FYN")==0)
+		      		{
+		      			//fprintf(stderr, "buf: %s\n",bufferBkp[i]);
+		      			//fprintf(stderr, "Saiu\n");
+		      			sair = 0;
+		      		}
+		     	}
+		     	if(sair==1)
+		     	{
+		     			//fprintf(stderr, "NUNCA SAI DESSA PORRA\n");
+		     			ack = ack + TAM_JANELA;
+		     			copiou = 0;
+		     	}
+		     	else
+		     	{
+		     		copiou = 1;
+		     	}		   		
+		    }
+     }
      //Finaliza as conexões e fecha os arquivos
      free(buffer);
      fclose(rFile);
