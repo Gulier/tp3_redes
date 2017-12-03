@@ -1,6 +1,6 @@
 /*******
 	Carlos Augusto Lana de Mello
-	2013062740
+	Yuri Carvalho Pains
 	Sistemas de Informação
 
 	Executar o make na pasta onde se encontram os arquivos
@@ -28,14 +28,15 @@ void error(const char *msg)
 
 int main(int argc, char *argv[])
 {
-    int sockfd, porta, n, b_size;		//sockfd- file descriptor - guarda informações do socket
+	int sockfd, porta, n, b_size;		//sockfd- file descriptor - guarda informações do socket
     char fname[9999], host[9999];
     FILE * wFile;
-    int bytes, cnt, TAM_JANELA = 5;
+    int bytes, cnt, TAM_JANELA;
     so_addr sv_addr;
     struct timeval start, end;
     struct hostent *server;
 
+	TAM_JANELA = atoi(argv[5]);
     b_size = atoi(argv[4]);
     strcpy(host, argv[1]);
     char buffer[b_size+1];
@@ -56,6 +57,7 @@ int main(int argc, char *argv[])
     bzero(buffer,b_size);
 
     n = tp_sendto(sockfd,fname,strlen(fname), &sv_addr);		//Envia o nome do arquivo para o servidor
+    n = tp_sendto(sockfd,argv[5],strlen(argv[5]), &sv_addr);
     char bufferBkp[9999][b_size];
     wFile = fopen("Output.txt","w+");					//Abre arquivo de saída no modo escrita
     if (wFile!=NULL)
@@ -67,23 +69,14 @@ int main(int argc, char *argv[])
         {
         	n = tp_recvfrom(sockfd,buffer,b_size, &sv_addr);	//Recebe info do servidor
         	int i,j, copiar = 0;
-        	if(strcmp(buffer,"FYN")==0){				//Se recebe FYN, termina execução
+        	if(strcmp(buffer,"FYN")==0){						//Se recebe FYN, termina execução
               fynEnviado = 1;
-				     // fprintf(stderr, "\n\n\nPODE COPIAAAAAAARadsadadsadsa\n\n\n");
-				     // fprintf(stderr, "\n\n\n%s\n\n\n", bufferBkp[j-1]);
-        		//break;
         	}
         	else
         	{
         		char result[11];
 		        strncpy(result, buffer, 6);
-		  	    //fprintf(stderr, "\n%s", result);
-		  	    //strncpy(result, buffer, 6);
 		  	    strncpy(bufferBkp[atoi(result)], buffer+6, strlen(buffer)-6);
-            //fprintf(stderr, "\n\n\n%d\n\n\n", atoi(result));
-            //fprintf(stderr, "\n\n\n%s\n\n\n", bufferBkp[atoi(result)]);
-
-			      //fprintf(stderr, "\nTESTE %s ID: %d", bufferBkp[atoi(result)], atoi(result));
 		  	    tp_sendto(sockfd,result,strlen(result), &sv_addr);	//Confirma que recebeu a msg
         	}
           copiar = 1;
@@ -100,32 +93,26 @@ int main(int argc, char *argv[])
 		      {
 			      for(i=ack; i<ack+TAM_JANELA; i++)
 			      {
-				      //fprintf(stderr, "\n\n\nPODE COPIAAAAAAAR\n\n\n");
-				      //fprintf(stderr, "\n\n\n%s\n\n\n", bufferBkp[i]);
-              if(strcmp(bufferBkp[i], "FYN")==0)
-              {
-                break;
-              }
-              else
-              {
-                fwrite(bufferBkp[i], 1, strlen(bufferBkp[i]), wFile);		//Escreve msg recebida no arquivo
-			        }
-            }
-			      copiar = 0;
-            ack+=TAM_JANELA;
-		      }
-          if (fynEnviado){
-            break;
-          }
+              			if(strcmp(bufferBkp[i], "FYN")==0)
+              			{
+                			break;
+              			}
+              			else
+              			{
+              				bytes+=strlen(bufferBkp[i]);
+                			fwrite(bufferBkp[i], 1, strlen(bufferBkp[i]), wFile);		//Escreve msg recebida no arquivo
+			        	}
+            		}
+			      	copiar = 0;
+            		ack+=TAM_JANELA;
+		      	}
+          		if (fynEnviado){
+            	break;
+          	  	}
+    			//bytes+=strlen(buffer);
 
-
-        	//fprintf(stderr, "\n%s", buffer);
-
-        	//tp_sendto(sockfd,"ACK",strlen("ACK"), &sv_addr);	//Confirma que recebeu a msg
-    		bytes+=strlen(buffer);
-
-    		if (n < 1) error("Erro ao ler do socket");
-    		  bzero(buffer,b_size);
+    			if (n < 1) error("Erro ao ler do socket");
+    		  	bzero(buffer,b_size);
         }
     }
     else

@@ -1,7 +1,7 @@
 
 /*******
 	Carlos Augusto Lana de Mello
-	2013062740
+	Yuri Carvalho Pains
 	Sistemas de Informação
 
 	Executar o make na pasta onde se encontram os arquivos
@@ -22,7 +22,6 @@
 #include <math.h>
 #include "tp_socket.h"
 
-#define TAM_JANELA 5
 
 void error(const char *msg)
 {//Exibe erro e aborta o programa
@@ -61,7 +60,7 @@ char *geraId(int a){
 
 int main(int argc, char *argv[])
 {
-     int sockfd, porta, b_size, n, aux,i;	//sockfd - file descriptor - guarda informações do socket
+     int sockfd, porta, b_size, n, aux,i, TAM_JANELA;	//sockfd - file descriptor - guarda informações do socket
      socklen_t clilen;
      FILE * rFile;
      so_addr sv_addr, cli_addr;
@@ -84,111 +83,87 @@ int main(int argc, char *argv[])
      tp_init();
      sockfd = tp_socket(porta);					//Inicia o servidor e "amarra" na porta passada como argumento
 
-     n = tp_recvfrom(sockfd, buffer, b_size, &cli_addr);
-
+     n = tp_recvfrom(sockfd, buffer, b_size, &cli_addr); // Recebe o nome do arquivo
      strcpy(fname, buffer);
+     bzero(buffer,b_size);
+     n = tp_recvfrom(sockfd, buffer, b_size, &cli_addr); // Recebe o tamanho da janela
+     TAM_JANELA = atoi(buffer);
      rFile = fopen(fname,"r");					//Abre o arquivo em modo leitura
-     //fseek(rFile, 0, SEEK_END);
      int size = ftell(rFile);
      int frames = ceil(size/b_size);
      if (rFile!=NULL)
      {
-     		int ack = 0, j = 1, i, copiou = 0, m;
-	    	aux = 1;
-/*while arquivo inteiro
-	for
-		if copiou = 0
-			le os primeiros 5 buffers
-			envia os 5 buffers
-		else
-			envia os 5 bfrbkp
-
-
-	if recebeu
-		coloca no bfrbkp "FYN"
-	for
-		le as posições acima no bfrbkp
-	if(terminou=1)
-		soma no ack o valor do tam janela
-		copiou = 0
-
-	else
-		copiou = 1 */
-	  struct timeval tv;
-	  tv.tv_sec = 5;  /* 5 Secs Timeout */
-      	  tv.tv_usec = 0;  // Not init'ing this can cause strange errors
-          setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv,sizeof(struct timeval));
-	  char bufferBkp[9999][b_size];
-	  while(aux)
-	  {
-			char oi[b_size-10];
-		      	//fprintf(stderr, "%s", oi2);
-          		char result[b_size];
-				int sair=1;
-				for(i=ack; i<ack+TAM_JANELA; i++)
+     	int ack = 0, j = 1, i, copiou = 0, m;
+	    aux = 1;
+	  	struct timeval tv;
+	  	tv.tv_sec = 1;  /* 1 Secs Timeout */
+      	tv.tv_usec = 0;
+        setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv,sizeof(struct timeval));
+        
+	  	char bufferBkp[9999][b_size];
+	  	while(aux)
+	  	{
+			char oi[b_size-7];
+          	char result[b_size];
+			int sair=1;
+			for(i=ack; i<ack+TAM_JANELA; i++)
+			{
+				if(copiou==0)
 				{
-					 //fprintf(stderr, "i : %d\n", i);
-				     if(copiou==0)
-				     {
-				         char *oi2 = geraId(i);
-					     //fprintf(stderr, "%s", oi2);
-					     bzero(result,b_size);
-					     //fprintf(stderr, "\n%s\n", result);
-					     n = fread(oi, b_size-10, 1, rFile); //le bloco no arquivo do tamanho do buffer
-					     fseek(rFile, n-1, SEEK_CUR);
-					     strcpy(result, oi2);
-					     strcat(result, oi);
-					     strcpy(bufferBkp[i], result);
+					char *oi2 = geraId(i);
+					bzero(result,b_size);
+					n = fread(oi, b_size-7, 1, rFile); //le bloco no arquivo do tamanho do buffer
+					fseek(rFile, n-1, SEEK_CUR);
+					strcpy(result, oi2);
+					strcat(result, oi);
+					strcpy(bufferBkp[i], result);
 
-					     m = tp_sendto(sockfd,result,b_size, &cli_addr); //Caso contrário manda um bloco
-					     fprintf(stderr, "\n%s", result);
+					m = tp_sendto(sockfd,result,b_size, &cli_addr); //Caso contrário manda um bloco
+					fprintf(stderr, "\n%s", result);
 
-					     if(n==0)
-					     {		//Se chegou no fim do arquivo, envia avisando para o cliente
-					      		tp_sendto(sockfd,bufferBkp[i],b_size, &cli_addr);
-					      		tp_sendto(sockfd,"FYN",strlen("FYN"), &cli_addr);
-							aux=0;
-							break;
-					     }
-				     }
-				     else
-				     {
-				     	 for(i=ack; i<ack+TAM_JANELA; i++)
+					if(n==0)
+					{		//Se chegou no fim do arquivo, envia avisando para o cliente
+						tp_sendto(sockfd,bufferBkp[i],b_size, &cli_addr);
+						tp_sendto(sockfd,"FYN",strlen("FYN"), &cli_addr);
+						aux=0;
+						break;
+					}
+				}
+				else
+				{
+					for(i=ack; i<ack+TAM_JANELA; i++)
+				    {
+				    	if(!strcmp(bufferBkp[i],"FYN")==0)
 				     	{
-				     		if(!strcmp(bufferBkp[i],"FYN")==0)
-				     		{
-					     		m = tp_sendto(sockfd,bufferBkp[i],b_size, &cli_addr); //Caso contrário manda um bloco
-					     		fprintf(stderr, "\n%s", result);
-				     		}
+					    	m = tp_sendto(sockfd,bufferBkp[i],b_size, &cli_addr); //Caso contrário manda um bloco
+					    	fprintf(stderr, "\n%s", result);
 				     	}
-				     }
-           		}
-		      	bzero(buffer,b_size);
-		      	if(tp_recvfrom(sockfd, buffer, b_size, &cli_addr)>0){
-		      		strcpy(bufferBkp[atoi(buffer)],"FYN");
-		      		//fprintf(stderr, "txt: %s buf: %d\n",bufferBkp[atoi(buffer)], atoi(buffer));
-		      	}
-		      	sair = 1;
-		      	for(i=ack; i<ack+TAM_JANELA; i++)
-		      	{
-		      		if(!strcmp(bufferBkp[i],"FYN")==0)
-		      		{
-		      			//fprintf(stderr, "buf: %s\n",bufferBkp[i]);
-		      			//fprintf(stderr, "Saiu\n");
-		      			sair = 0;
-		      		}
-		     	}
-		     	if(sair==1)
-		     	{
-		     			//fprintf(stderr, "NUNCA SAI DESSA PORRA\n");
-		     			ack = ack + TAM_JANELA;
-		     			copiou = 0;
-		     	}
-		     	else
-		     	{
-		     		copiou = 1;
-		     	}
+				    }
+				}
+           	}
+		    bzero(buffer,b_size);
+		    if(tp_recvfrom(sockfd, buffer, b_size, &cli_addr)>0)
+		    {
+		    	strcpy(bufferBkp[atoi(buffer)],"FYN");
 		    }
+		    sair = 1;
+		    for(i=ack; i<ack+TAM_JANELA; i++)
+		    {
+		    	if(!strcmp(bufferBkp[i],"FYN")==0)
+		      	{
+		      		sair = 0;
+		      	}
+		    }
+		    if(sair==1)
+		    {
+		    	ack = ack + TAM_JANELA;
+		    	copiou = 0;
+		    }
+		    else
+		    {
+		    	copiou = 1;
+		    }
+		}
      }
      //Finaliza as conexões e fecha os arquivos
      free(buffer);
