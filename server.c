@@ -97,39 +97,40 @@ int main(int argc, char *argv[])
 	    	aux = 1;
 	    	while(aux==1)
 	    	{
-		      bzero(buffer,b_size);			//zera buffer
-          char oi[b_size-10];
-          char *oi2 = geraId(j);
-		      fprintf(stderr, "%s", oi2);
-          char result[b_size];
-          strcpy(result, oi2);
-          strcat(result, buffer);
-		      //fprintf(stderr, "\n%s\n", result);
-		      n = fread(buffer, b_size-10, 1, rFile);	//le bloco no arquivo do tamanho do buffer
-		      fprintf(stderr, "\n%s\n", result);
-		      fseek(rFile, n-1, SEEK_CUR);
+		      	bzero(buffer,b_size);			//zera buffer
+          		char oi[b_size-10];
+          		char *oi2 = geraId(j);
+		      	//fprintf(stderr, "%s", oi2);
+          		char result[b_size];
+          		bzero(result,b_size);
+		      	//fprintf(stderr, "\n%s\n", result);
+		      	n = fread(oi, b_size-10, 1, rFile);	//le bloco no arquivo do tamanho do buffer
+		      	strcpy(result, oi2);
+         		strcat(result, oi);
+		      	//fprintf(stderr, "\n%s\n", result);
+		      	fseek(rFile, n-1, SEEK_CUR);
 
-		      if(n==0)
-		      {						//Se chegou no fim do arquivo, envia avisando para o cliente
-		      	tp_sendto(sockfd,buffer,b_size, &cli_addr);
-		      	tp_sendto(sockfd,"FYN",strlen("FYN"), &cli_addr);
-			aux=0;
-			break;
-		      }
-
-		      n = tp_sendto(sockfd,buffer,b_size, &cli_addr); //Caso contrário manda um bloco
-
-		      while(1){					//Espera algum sinal do cliente antes de enviar o próximo pacote
-		      	bzero(buffer,b_size);
-		      	if(tp_recvfrom(sockfd, buffer, b_size, &cli_addr)>0){
-		      		//fprintf(stderr, "%s", buffer);
-              break;				//Quando recebe, quebra o loop e volta ao procedimento
+		      	if(n==0)
+		      	{						//Se chegou no fim do arquivo, envia avisando para o cliente
+		      		//tp_sendto(sockfd,result,b_size, &cli_addr);
+		      		tp_sendto(sockfd,"FYN",strlen("FYN"), &cli_addr);
+				aux=0;
+				break;
 		      	}
-		      }
-		      if (n < 0)
-      			 error("ERROR in sendto");
-	     	j++;
-        }
+
+		      	n = tp_sendto(sockfd,result,b_size, &cli_addr); //Caso contrário manda um bloco
+
+		      	while(1){					//Espera algum sinal do cliente antes de enviar o próximo pacote
+		      		bzero(buffer,b_size);
+		      		if(tp_recvfrom(sockfd, buffer, b_size, &cli_addr)>0){
+		      			fprintf(stderr, "%s", buffer);
+              				break;				//Quando recebe, quebra o loop e volta ao procedimento
+		      		}
+		      	}
+		      	if (n < 0)
+      			 	error("ERROR in sendto");
+	     		j++;
+        	}
      }/*
      if (rFile!=NULL)
      {

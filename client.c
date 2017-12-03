@@ -68,14 +68,14 @@ int main(int argc, char *argv[])
         		break;
         	}
           //MEXER AQ
-          //char result[11];
-          //strncpy(result, buffer, 6);
-          //fprintf(stderr, "\n%s", result);
-        	//tp_sendto(sockfd,result,strlen(result), &sv_addr);	//Confirma que recebeu a msg
+          	char result[11];
+          	strncpy(result, buffer, 6);
+          	fprintf(stderr, "\n%s", result);
+        	tp_sendto(sockfd,result,strlen(result), &sv_addr);	//Confirma que recebeu a msg
 
-        	tp_sendto(sockfd,"ACK",strlen("ACK"), &sv_addr);	//Confirma que recebeu a msg
+        	//tp_sendto(sockfd,"ACK",strlen("ACK"), &sv_addr);	//Confirma que recebeu a msg
     		bytes+=strlen(buffer);
-    		fwrite(buffer, 1, strlen(buffer), wFile);		//Escreve msg recebida no arquivo
+    		fwrite(buffer+6, 1, strlen(buffer)-6, wFile);		//Escreve msg recebida no arquivo
     		if (n < 1) error("Erro ao ler do socket");
     		bzero(buffer,b_size);
         }
