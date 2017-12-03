@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
         	n = tp_recvfrom(sockfd,buffer,b_size, &sv_addr);	//Recebe info do servidor
         	int i,j, copiar = 0;
         	if(strcmp(buffer,"FYN")==0){						//Se recebe FYN, termina execução
-              fynEnviado = 1;
+              	fynEnviado = 1;
         	}
         	else
         	{

@@ -6,7 +6,7 @@
 
 	Executar o make na pasta onde se encontram os arquivos
 		Chamar o servidor, na forma ./servidorFTP porta tam_buffer
-		Chamar o cliente, na forma ./clienteFTP host_do_servidor porta_servidor nome_arquivo tam_buffer
+		Chamar o cliente, na forma ./clienteFTP host_do_servidor porta_servidor nome_arquivo tam_buffer tam_janela
 *******/
 
 #include <stdio.h>
@@ -119,7 +119,6 @@ int main(int argc, char *argv[])
 					strcpy(bufferBkp[i], result);
 
 					m = tp_sendto(sockfd,result,b_size, &cli_addr); //Caso contrário manda um bloco
-					fprintf(stderr, "\n%s", result);
 
 					if(n==0)
 					{		//Se chegou no fim do arquivo, envia avisando para o cliente
@@ -136,7 +135,6 @@ int main(int argc, char *argv[])
 				    	if(!strcmp(bufferBkp[i],"FYN")==0)
 				     	{
 					    	m = tp_sendto(sockfd,bufferBkp[i],b_size, &cli_addr); //Caso contrário manda um bloco
-					    	fprintf(stderr, "\n%s", result);
 				     	}
 				    }
 				}
