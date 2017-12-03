@@ -61,51 +61,71 @@ int main(int argc, char *argv[])
     if (wFile!=NULL)
     {
         bytes = 0;
-        int ack = 0;
-        
+        int ack = 0, fynEnviado;
+
         while(1)
         {
         	n = tp_recvfrom(sockfd,buffer,b_size, &sv_addr);	//Recebe info do servidor
         	int i,j, copiar = 0;
         	if(strcmp(buffer,"FYN")==0){				//Se recebe FYN, termina execução
-        		break;
+              fynEnviado = 1;
+				     // fprintf(stderr, "\n\n\nPODE COPIAAAAAAARadsadadsadsa\n\n\n");
+				     // fprintf(stderr, "\n\n\n%s\n\n\n", bufferBkp[j-1]);
+        		//break;
         	}
         	else
         	{
         		char result[11];
-		  	strncpy(result, buffer, 6);
-		  	fprintf(stderr, "\n%s", result);
-		  	strncpy(result, buffer, 6);
-		  	strncpy(bufferBkp[atoi(result)], buffer+6, strlen(buffer)-6);
-		  	tp_sendto(sockfd,result,strlen(result), &sv_addr);	//Confirma que recebeu a msg
+		        strncpy(result, buffer, 6);
+		  	    //fprintf(stderr, "\n%s", result);
+		  	    //strncpy(result, buffer, 6);
+		  	    strncpy(bufferBkp[atoi(result)], buffer+6, strlen(buffer)-6);
+            //fprintf(stderr, "\n\n\n%d\n\n\n", atoi(result));
+            //fprintf(stderr, "\n\n\n%s\n\n\n", bufferBkp[atoi(result)]);
+
+			      //fprintf(stderr, "\nTESTE %s ID: %d", bufferBkp[atoi(result)], atoi(result));
+		  	    tp_sendto(sockfd,result,strlen(result), &sv_addr);	//Confirma que recebeu a msg
         	}
+          copiar = 1;
         	for(i=ack; i<ack+TAM_JANELA; i++)
-		{	
-			fprintf(stderr, "\nTESTE %s", bufferBkp[i]);
-			if(!strcmp(bufferBkp[i],"\0")==0)
-			{
-				fprintf(stderr, "cu\n");
-				copiar = 1;
-			}
-		}
-		
-		if(copiar== 1)
-		{
-			for(i=ack; i<ack+TAM_JANELA; i++)
-			{
-				fwrite(bufferBkp[i], 1, strlen(bufferBkp[i]), wFile);		//Escreve msg recebida no arquivo
-			}
-			copiar = 0;ack+=TAM_JANELA;
-		}
-		
-        	
+		      {
+			      if(strcmp(bufferBkp[i],"")==0 && !fynEnviado)
+			      {
+				      copiar = 0;
+			      }
+
+		      }
+
+		      if(copiar== 1)
+		      {
+			      for(i=ack; i<ack+TAM_JANELA; i++)
+			      {
+				      //fprintf(stderr, "\n\n\nPODE COPIAAAAAAAR\n\n\n");
+				      //fprintf(stderr, "\n\n\n%s\n\n\n", bufferBkp[i]);
+              if(strcmp(bufferBkp[i], "FYN")==0)
+              {
+                break;
+              }
+              else
+              {
+                fwrite(bufferBkp[i], 1, strlen(bufferBkp[i]), wFile);		//Escreve msg recebida no arquivo
+			        }
+            }
+			      copiar = 0;
+            ack+=TAM_JANELA;
+		      }
+          if (fynEnviado){
+            break;
+          }
+
+
         	//fprintf(stderr, "\n%s", buffer);
-        	
+
         	//tp_sendto(sockfd,"ACK",strlen("ACK"), &sv_addr);	//Confirma que recebeu a msg
     		bytes+=strlen(buffer);
-    		
+
     		if (n < 1) error("Erro ao ler do socket");
-    		bzero(buffer,b_size);
+    		  bzero(buffer,b_size);
         }
     }
     else

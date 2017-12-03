@@ -96,14 +96,14 @@ int main(int argc, char *argv[])
      		int ack = 0, j = 1, i, copiou = 0, m;
 	    	aux = 1;
 /*while arquivo inteiro
-	for 
+	for
 		if copiou = 0
-			le os primeiros 5 buffers	
+			le os primeiros 5 buffers
 			envia os 5 buffers
 		else
-			envia os 5 bfrbkp		
-		
-		
+			envia os 5 bfrbkp
+
+
 	if recebeu
 		coloca no bfrbkp "FYN"
 	for
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 	if(terminou=1)
 		soma no ack o valor do tam janela
 		copiou = 0
-		
+
 	else
 		copiou = 1 */
 	  struct timeval tv;
@@ -139,13 +139,13 @@ int main(int argc, char *argv[])
 					     strcpy(result, oi2);
 					     strcat(result, oi);
 					     strcpy(bufferBkp[i], result);
-					     
+
 					     m = tp_sendto(sockfd,result,b_size, &cli_addr); //Caso contrário manda um bloco
 					     fprintf(stderr, "\n%s", result);
-					     
+
 					     if(n==0)
 					     {		//Se chegou no fim do arquivo, envia avisando para o cliente
-					      		//tp_sendto(sockfd,result,b_size, &cli_addr);
+					      		tp_sendto(sockfd,bufferBkp[i],b_size, &cli_addr);
 					      		tp_sendto(sockfd,"FYN",strlen("FYN"), &cli_addr);
 							aux=0;
 							break;
@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
 		     	else
 		     	{
 		     		copiou = 1;
-		     	}		   		
+		     	}
 		    }
      }
      //Finaliza as conexões e fecha os arquivos
